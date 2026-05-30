@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}Add Stock — StockPulse{% endblock %}
+
+{% block content %}
+<div class="px-4 pt-8 pb-4 max-w-lg mx-auto">
+
+    <!-- Header -->
+    <div class="mb-6">
+        <p class="text-sm font-medium mb-1" style="color: var(--accent); font-family: 'Syne', sans-serif; letter-spacing: 0.1em;">ADD STOCK</p>
+        <h1 class="text-3xl font-display font-bold" style="color: var(--text-primary);">New Product</h1>
+    </div>
+
+    <!-- Scanner Card -->
+    <div class="card mb-5 overflow-hidden">
+        <div class="p-4 flex items-center justify-between" style="border-bottom: 1px solid var(--border);">
+            <div>
+                <div class="font-semibold text-sm" style="font-family: 'Syne', sans-serif;">Barcode Scanner</div>
+                <div class="text-xs mt-0.5" style="color: var(--text-muted);">Tap to open camera</div>
+            </div>
+            <button id="toggleScanBtn" onclick="toggleScanner()" 
+                    class="btn-primary px-4 py-2 text-sm flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span id="scanBtnText">Scan</span>
+            </button>
+        </div>
+        <div id="scanner-container" class="hidden p-3">
+            <div id="qr-reader" class="w-full rounded-2xl overflow-hidden scan-pulse"></div>
+            <div class="mt-3 text-center text-xs" style="color: var(--text-muted);">
+                Point camera at barcode — EAN / UPC / CODE128 / QR
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form id="addForm" onsubmit="handleSubmit(event)" autocomplete="off">
+        
+        <!-- Barcode -->
+        <div class="mb-4">
+            <label class="block text-xs font-semibold mb-2" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.08em;">BARCODE / SERIAL</label>
+            <div class="relative">
+                <input type="text" id="barcode" name="barcode" required
+                       placeholder="Scan or type barcode..."
+                       class="input-field w-full px-4 py-3.5 pr-12 text-base font-mono">
+                <div id="barcodeStatus" class="absolute right-4 top-1/2 -translate-y-1/2 hidden">
+                    <div class="w-5 h-5 rounded-full flex items-center justify-center" style="background: rgba(0,229,160,0.2); color: var(--accent);">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Brand -->
+        <div class="mb-4">
+            <label class="block text-xs font-semibold mb-2" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.08em;">BRAND</label>
+            <input type="text" id="brand" name="brand" required
+                   placeholder="e.g. Samsung, Apple, Sony..."
+                   class="input-field w-full px-4 py-3.5 text-base">
+        </div>
+
+        <!-- Product Type -->
+        <div class="mb-4">
+            <label class="block text-xs font-semibold mb-2" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.08em;">PRODUCT TYPE</label>
+            <input type="text" id="product_type" name="product_type" required
+                   placeholder="e.g. Smartphone, Laptop, TV..."
+                   class="input-field w-full px-4 py-3.5 text-base"
+                   list="productTypes">
+            <datalist id="productTypes">
+                <option value="Smartphone">
+                <option value="Laptop">
+                <option value="Tablet">
+                <option value="Smart TV">
+                <option value="Headphones">
+                <option value="Smartwatch">
+                <option value="Camera">
+                <option value="Printer">
+                <option value="Router">
+                <option value="Accessory">
+            </datalist>
+        </div>
+
+        <!-- Model -->
+        <div class="mb-4">
+            <label class="block text-xs font-semibold mb-2" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.08em;">MODEL</label>
+            <input type="text" id="model" name="model" required
+                   placeholder="e.g. Galaxy S24 Ultra..."
+                   class="input-field w-full px-4 py-3.5 text-base">
+        </div>
+
+        <!-- Quantity -->
+        <div class="mb-6">
+            <label class="block text-xs font-semibold mb-2" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.08em;">QUANTITY</label>
+            <div class="flex items-center gap-4">
+                <button type="button" onclick="adjustQty(-1)" 
+                        class="btn-ghost w-12 h-12 text-2xl font-bold flex items-center justify-center">−</button>
+                <input type="number" id="quantity" name="quantity" value="1" min="1" required
+                       class="input-field flex-1 px-4 py-3.5 text-center text-xl font-bold font-display">
+                <button type="button" onclick="adjustQty(1)" 
+                        class="btn-primary w-12 h-12 text-2xl font-bold flex items-center justify-center">+</button>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" id="submitBtn" class="btn-primary w-full py-4 text-base flex items-center justify-center gap-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Add to Inventory</span>
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let html5QrcodeScanner = null;
+let scannerActive = false;
+
+function toggleScanner() {
+    if (scannerActive) {
+        stopScanner();
+    } else {
+        startScanner();
+    }
+}
+
+function startScanner() {
+    const container = document.getElementById('scanner-container');
+    const btn = document.getElementById('toggleScanBtn');
+    const btnText = document.getElementById('scanBtnText');
+    
+    container.classList.remove('hidden');
+    btn.style.background = 'var(--danger)';
+    btnText.textContent = 'Stop';
+    scannerActive = true;
+
+    html5QrcodeScanner = new Html5Qrcode("qr-reader");
+    
+    const config = {
+        fps: 15,
+        qrbox: { width: 260, height: 120 },
+        formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.QR_CODE,
+        ],
+        aspectRatio: 1.5
+    };
+
+    html5QrcodeScanner.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+            document.getElementById('barcode').value = decodedText;
+            document.getElementById('barcodeStatus').classList.remove('hidden');
+            stopScanner();
+            showToast('Barcode scanned: ' + decodedText.substring(0, 20), 'success');
+            document.getElementById('brand').focus();
+            // Vibrate if supported
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+        },
+        () => {} // ignore errors
+    ).catch(err => {
+        showToast('Camera access denied. Please allow camera.', 'error');
+        stopScanner();
+    });
+}
+
+function stopScanner() {
+    const container = document.getElementById('scanner-container');
+    const btn = document.getElementById('toggleScanBtn');
+    const btnText = document.getElementById('scanBtnText');
+
+    if (html5QrcodeScanner && scannerActive) {
+        html5QrcodeScanner.stop().then(() => {
+            html5QrcodeScanner.clear();
+        }).catch(() => {});
+    }
+    container.classList.add('hidden');
+    btn.style.background = '';
+    btnText.textContent = 'Scan';
+    scannerActive = false;
+}
+
+function adjustQty(delta) {
+    const input = document.getElementById('quantity');
+    const val = Math.max(1, (parseInt(input.value) || 1) + delta);
+    input.value = val;
+}
+
+async function handleSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div><span>Saving...</span>';
+
+    const data = {
+        barcode: document.getElementById('barcode').value.trim(),
+        brand: document.getElementById('brand').value.trim(),
+        product_type: document.getElementById('product_type').value.trim(),
+        model: document.getElementById('model').value.trim(),
+        quantity: parseInt(document.getElementById('quantity').value)
+    };
+
+    try {
+        const res = await fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+
+        if (result.success) {
+            showToast(`✓ ${data.brand} ${data.model} added!`, 'success');
+            document.getElementById('addForm').reset();
+            document.getElementById('quantity').value = 1;
+            document.getElementById('barcodeStatus').classList.add('hidden');
+            document.getElementById('barcode').focus();
+        } else {
+            showToast(result.error || 'Failed to add product', 'error', 4000);
+        }
+    } catch(err) {
+        showToast('Network error. Try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg><span>Add to Inventory</span>';
+    }
+}
+
+// Stop scanner when leaving page
+window.addEventListener('beforeunload', () => {
+    if (scannerActive) stopScanner();
+});
+
+// Clear barcode status on manual input
+document.getElementById('barcode').addEventListener('input', function() {
+    if (!this.value) {
+        document.getElementById('barcodeStatus').classList.add('hidden');
+    }
+});
+</script>
+{% endblock %}

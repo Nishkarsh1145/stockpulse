@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}Stock Out — StockPulse{% endblock %}
+
+{% block content %}
+<div class="px-4 pt-8 pb-4 max-w-lg mx-auto">
+
+    <!-- Header -->
+    <div class="mb-6">
+        <p class="text-sm font-medium mb-1" style="color: var(--danger); font-family: 'Syne', sans-serif; letter-spacing: 0.1em;">STOCK OUT</p>
+        <h1 class="text-3xl font-display font-bold" style="color: var(--text-primary);">Remove Stock</h1>
+    </div>
+
+    <!-- Scanner Card -->
+    <div class="card mb-5 overflow-hidden">
+        <div class="p-4 flex items-center justify-between" style="border-bottom: 1px solid var(--border);">
+            <div>
+                <div class="font-semibold text-sm" style="font-family: 'Syne', sans-serif;">Scan to Remove</div>
+                <div class="text-xs mt-0.5" style="color: var(--text-muted);">Open camera and scan item</div>
+            </div>
+            <button id="toggleScanBtn" onclick="toggleScanner()"
+                    class="btn-primary px-4 py-2 text-sm flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span id="scanBtnText">Scan</span>
+            </button>
+        </div>
+        <div id="scanner-container" class="hidden p-3">
+            <div id="qr-reader" class="w-full rounded-2xl overflow-hidden scan-pulse"></div>
+            <div class="mt-3 text-center text-xs" style="color: var(--text-muted);">
+                Point camera at barcode to find product
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Barcode Entry -->
+    <div class="mb-5">
+        <label class="block text-xs font-semibold mb-2" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.08em;">OR ENTER BARCODE MANUALLY</label>
+        <div class="flex gap-2">
+            <input type="text" id="manualBarcode" placeholder="Type barcode..."
+                   class="input-field flex-1 px-4 py-3.5 text-base font-mono"
+                   onkeydown="if(event.key==='Enter') searchBarcode()">
+            <button onclick="searchBarcode()" class="btn-ghost px-4 py-3 text-sm font-semibold flex items-center gap-2" style="font-family: 'Syne', sans-serif; white-space: nowrap;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                Find
+            </button>
+        </div>
+    </div>
+
+    <!-- Product Result Card -->
+    <div id="productResult" class="hidden">
+        <div class="card p-5 mb-4" style="border-color: rgba(255,77,106,0.3);">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <div class="text-xs font-semibold mb-1" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.08em;">PRODUCT FOUND</div>
+                    <h2 class="text-xl font-bold" style="font-family: 'Syne', sans-serif;" id="resultName">—</h2>
+                    <div class="text-sm mt-1" style="color: var(--text-muted);" id="resultType">—</div>
+                </div>
+                <div id="resultQtyBadge" class="text-right">
+                    <div class="text-xs mb-1" style="color: var(--text-muted); font-family: 'Syne', sans-serif;">IN STOCK</div>
+                    <div class="text-3xl font-bold font-display" id="resultQty" style="color: var(--accent);">—</div>
+                </div>
+            </div>
+            <div class="font-mono text-xs px-3 py-2 rounded-lg mb-5" style="background: var(--bg-elevated); color: var(--text-muted);" id="resultBarcode">—</div>
+
+            <!-- DELETE Button -->
+            <button onclick="confirmStockOut()" id="deleteBtn"
+                    class="btn-danger w-full py-4 text-base flex items-center justify-center gap-3">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                DELETE FROM STOCK
+            </button>
+        </div>
+    </div>
+
+    <!-- Not Found State -->
+    <div id="notFound" class="hidden card p-8 text-center">
+        <div class="text-4xl mb-3">🔍</div>
+        <div class="font-semibold mb-1" style="font-family: 'Syne', sans-serif;">Not Found</div>
+        <div class="text-sm" style="color: var(--text-muted);">No product with that barcode exists</div>
+    </div>
+
+    <!-- Instructions -->
+    <div id="instructions" class="card p-6 text-center">
+        <div class="text-4xl mb-3">📷</div>
+        <div class="font-semibold mb-2" style="font-family: 'Syne', sans-serif; color: var(--text-primary);">Ready to Scan</div>
+        <div class="text-sm" style="color: var(--text-muted);">Scan a barcode or enter it manually to find and remove a product from inventory</div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal-overlay hidden" onclick="closeConfirmOutside(event)">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="px-5">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style="background: rgba(255,77,106,0.1);">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <h2 class="text-xl font-bold mb-2" style="font-family: 'Syne', sans-serif;">Confirm Stock Out</h2>
+                <div class="text-sm" style="color: var(--text-muted);" id="confirmMsg">Remove 1 unit from inventory?</div>
+            </div>
+
+            <div class="card-elevated rounded-2xl p-4 mb-6 text-center">
+                <div class="font-bold text-lg mb-0.5" style="font-family: 'Syne', sans-serif;" id="confirmName">—</div>
+                <div class="text-sm" style="color: var(--text-muted);" id="confirmDetail">—</div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="btn-ghost flex-1 py-3.5 text-sm font-semibold" style="font-family: 'Syne', sans-serif;">Cancel</button>
+                <button onclick="executeStockOut()" class="btn-danger flex-1 py-3.5 text-sm flex items-center justify-center gap-2" id="confirmDeleteBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let html5QrcodeScanner = null;
+let scannerActive = false;
+let currentBarcode = null;
+let currentProduct = null;
+
+function toggleScanner() {
+    if (scannerActive) stopScanner();
+    else startScanner();
+}
+
+function startScanner() {
+    const container = document.getElementById('scanner-container');
+    const btn = document.getElementById('toggleScanBtn');
+    const btnText = document.getElementById('scanBtnText');
+
+    container.classList.remove('hidden');
+    btn.style.background = 'var(--danger)';
+    btnText.textContent = 'Stop';
+    scannerActive = true;
+
+    html5QrcodeScanner = new Html5Qrcode("qr-reader");
+    const config = {
+        fps: 15,
+        qrbox: { width: 260, height: 120 },
+        formatsToSupport: [
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.QR_CODE,
+        ],
+        aspectRatio: 1.5
+    };
+
+    html5QrcodeScanner.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+            stopScanner();
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            fetchProduct(decodedText);
+        },
+        () => {}
+    ).catch(() => {
+        showToast('Camera access denied', 'error');
+        stopScanner();
+    });
+}
+
+function stopScanner() {
+    if (html5QrcodeScanner && scannerActive) {
+        html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear()).catch(() => {});
+    }
+    document.getElementById('scanner-container').classList.add('hidden');
+    const btn = document.getElementById('toggleScanBtn');
+    btn.style.background = '';
+    document.getElementById('scanBtnText').textContent = 'Scan';
+    scannerActive = false;
+}
+
+function searchBarcode() {
+    const val = document.getElementById('manualBarcode').value.trim();
+    if (!val) { showToast('Enter a barcode first', 'info'); return; }
+    fetchProduct(val);
+}
+
+async function fetchProduct(barcode) {
+    document.getElementById('productResult').classList.add('hidden');
+    document.getElementById('notFound').classList.add('hidden');
+    document.getElementById('instructions').classList.add('hidden');
+
+    try {
+        const res = await fetch(`/api/products/scan/${encodeURIComponent(barcode)}`);
+        const data = await res.json();
+
+        if (data.success) {
+            currentBarcode = barcode;
+            currentProduct = data.product;
+            showProductResult(data.product);
+        } else {
+            document.getElementById('notFound').classList.remove('hidden');
+            showToast('Product not found', 'error');
+        }
+    } catch(e) {
+        showToast('Error finding product', 'error');
+        document.getElementById('instructions').classList.remove('hidden');
+    }
+}
+
+function showProductResult(p) {
+    document.getElementById('resultName').textContent = `${p.brand} ${p.model}`;
+    document.getElementById('resultType').textContent = p.product_type;
+    document.getElementById('resultBarcode').textContent = p.barcode;
+
+    const qtyEl = document.getElementById('resultQty');
+    qtyEl.textContent = p.quantity;
+    if (p.quantity <= 1) {
+        qtyEl.style.color = 'var(--danger)';
+    } else if (p.quantity <= 3) {
+        qtyEl.style.color = 'var(--warning)';
+    } else {
+        qtyEl.style.color = 'var(--accent)';
+    }
+
+    document.getElementById('productResult').classList.remove('hidden');
+    showToast(`Found: ${p.brand} ${p.model}`, 'success');
+}
+
+function confirmStockOut() {
+    if (!currentProduct) return;
+    const willRemove = currentProduct.quantity <= 1;
+
+    document.getElementById('confirmName').textContent = `${currentProduct.brand} ${currentProduct.model}`;
+    document.getElementById('confirmDetail').textContent = currentProduct.product_type;
+    document.getElementById('confirmMsg').textContent = willRemove
+        ? '⚠️ Last unit — product will be DELETED from inventory!'
+        : `Remove 1 unit (${currentProduct.quantity} → ${currentProduct.quantity - 1} remaining)`;
+
+    document.getElementById('confirmModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function closeConfirmOutside(e) {
+    if (e.target.classList.contains('modal-overlay')) closeConfirmModal();
+}
+
+async function executeStockOut() {
+    const btn = document.getElementById('confirmDeleteBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div>';
+
+    try {
+        const res = await fetch(`/api/products/stock-out/${encodeURIComponent(currentBarcode)}`, {
+            method: 'POST'
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            closeConfirmModal();
+            if (data.removed) {
+                showToast('Product removed from inventory', 'info', 4000);
+                document.getElementById('productResult').classList.add('hidden');
+                document.getElementById('instructions').classList.remove('hidden');
+                currentBarcode = null;
+                currentProduct = null;
+                document.getElementById('manualBarcode').value = '';
+            } else {
+                currentProduct.quantity = data.new_qty;
+                showProductResult(currentProduct);
+                showToast(`Stock reduced. ${data.new_qty} remaining`, 'success');
+            }
+        } else {
+            showToast(data.error || 'Failed', 'error');
+        }
+    } catch(e) {
+        showToast('Error processing stock out', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Confirm';
+    }
+}
+
+window.addEventListener('beforeunload', () => { if (scannerActive) stopScanner(); });
+</script>
+{% endblock %}

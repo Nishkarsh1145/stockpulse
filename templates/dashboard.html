@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}StockPulse — Dashboard{% endblock %}
+
+{% block content %}
+<div class="px-4 pt-8 pb-4 max-w-lg mx-auto">
+
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-1">
+            <p class="text-sm font-medium" style="color: var(--accent); font-family: 'Syne', sans-serif; letter-spacing: 0.1em;">STOCK PULSE</p>
+            <div class="flex items-center gap-2 text-xs" style="color: var(--text-muted);">
+                <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                <span>Live</span>
+            </div>
+        </div>
+        <h1 class="text-3xl font-display font-bold" style="color: var(--text-primary);">Dashboard</h1>
+    </div>
+
+    <!-- Search -->
+    <div class="relative mb-6">
+        <div class="absolute left-4 top-1/2 -translate-y-1/2" style="color: var(--text-muted);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </div>
+        <input type="text" id="searchInput" placeholder="Search products..." 
+               class="input-field w-full pl-11 pr-4 py-3.5 text-base"
+               oninput="handleSearch(this.value)">
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-3 gap-3 mb-6">
+        <div class="card stat-card stat-accent p-4">
+            <div class="text-xs font-semibold mb-2" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.05em;">PRODUCTS</div>
+            <div class="text-3xl font-display font-bold" style="color: var(--accent);" id="stat-total">{{ total }}</div>
+        </div>
+        <div class="card stat-card stat-warning p-4">
+            <div class="text-xs font-semibold mb-2" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.05em;">LOW STOCK</div>
+            <div class="text-3xl font-display font-bold" style="color: var(--warning);" id="stat-low">{{ low_stock }}</div>
+        </div>
+        <div class="card stat-card stat-danger p-4">
+            <div class="text-xs font-semibold mb-2" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.05em;">OUT</div>
+            <div class="text-3xl font-display font-bold" style="color: var(--danger);" id="stat-out">{{ out_of_stock }}</div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mb-6">
+        <h2 class="text-sm font-semibold mb-3" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.08em;">QUICK ACTIONS</h2>
+        <div class="grid grid-cols-2 gap-3">
+            <a href="/add" class="btn-primary flex items-center gap-3 px-4 py-4 text-left">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: rgba(10,14,26,0.2);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <span class="text-sm">Add to Stock</span>
+            </a>
+            <a href="/stock-out" class="flex items-center gap-3 px-4 py-4 text-left rounded-2xl" style="background: rgba(255,77,106,0.1); border: 1px solid rgba(255,77,106,0.2); color: var(--danger);">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: rgba(255,77,106,0.1);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                </div>
+                <span class="text-sm font-bold" style="font-family: 'Syne', sans-serif;">Stock Out</span>
+            </a>
+            <a href="/inventory" class="card-elevated flex items-center gap-3 px-4 py-4" style="color: var(--text-primary);">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: rgba(99,130,255,0.1); color: #6382FF;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </div>
+                <span class="text-sm font-semibold" style="font-family: 'Syne', sans-serif;">View All</span>
+            </a>
+            <a href="/inventory?q=" class="card-elevated flex items-center gap-3 px-4 py-4" style="color: var(--text-primary);" onclick="event.preventDefault(); window.location='/inventory?low=1'">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: rgba(255,179,71,0.1); color: var(--warning);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <span class="text-sm font-semibold" style="font-family: 'Syne', sans-serif;">Low Stock</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Products -->
+    <div>
+        <h2 class="text-sm font-semibold mb-3" style="color: var(--text-muted); font-family: 'Syne', sans-serif; letter-spacing: 0.08em;">RECENTLY ADDED</h2>
+        <div class="flex flex-col gap-2" id="recentList">
+            {% for p in recent %}
+            <div class="card p-4 flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="font-semibold text-sm truncate" style="font-family: 'Syne', sans-serif; color: var(--text-primary);">{{ p.brand }} {{ p.model }}</div>
+                    <div class="text-xs mt-0.5 flex items-center gap-2" style="color: var(--text-muted);">
+                        <span>{{ p.product_type }}</span>
+                        <span>·</span>
+                        <span class="font-mono text-xs">{{ p.barcode[:12] }}{% if p.barcode|length > 12 %}…{% endif %}</span>
+                    </div>
+                </div>
+                <div class="ml-3">
+                    {% if p.quantity == 0 %}
+                        <span class="badge badge-danger">Out</span>
+                    {% elif p.quantity <= 3 %}
+                        <span class="badge badge-warning">{{ p.quantity }} left</span>
+                    {% else %}
+                        <span class="badge badge-success">{{ p.quantity }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="card p-8 text-center" style="color: var(--text-muted);">
+                <div class="text-4xl mb-2">📦</div>
+                <p class="text-sm">No products yet. Add your first item!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Search Results Overlay -->
+    <div id="searchResults" class="hidden mt-4 flex flex-col gap-2"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let searchTimeout;
+function handleSearch(val) {
+    clearTimeout(searchTimeout);
+    const results = document.getElementById('searchResults');
+    const recent = document.getElementById('recentList');
+    if (!val.trim()) {
+        results.classList.add('hidden');
+        recent.classList.remove('hidden');
+        return;
+    }
+    searchTimeout = setTimeout(async () => {
+        const res = await fetch(`/inventory?q=${encodeURIComponent(val)}`);
+        // Simple redirect
+        window.location = `/inventory?q=${encodeURIComponent(val)}`;
+    }, 400);
+}
+
+// Refresh stats on load
+async function refreshStats() {
+    try {
+        const r = await fetch('/api/stats');
+        const d = await r.json();
+        document.getElementById('stat-total').textContent = d.total;
+        document.getElementById('stat-low').textContent = d.low_stock;
+        document.getElementById('stat-out').textContent = d.out_of_stock;
+    } catch(e) {}
+}
+</script>
+{% endblock %}

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>{% block title %}StockPulse{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        :root {
+            --accent: #00E5A0;
+            --accent-dark: #00B87A;
+            --bg-primary: #0A0E1A;
+            --bg-card: #111827;
+            --bg-elevated: #1a2236;
+            --text-primary: #F0F4FF;
+            --text-muted: #6B7A9E;
+            --border: #1E2D45;
+            --danger: #FF4D6A;
+            --warning: #FFB347;
+        }
+        * { -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; background: var(--bg-primary); color: var(--text-primary); }
+        body { font-family: 'DM Sans', sans-serif; overscroll-behavior: none; }
+        h1,h2,h3,.font-display { font-family: 'Syne', sans-serif; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        /* Nav */
+        .bottom-nav { background: rgba(17,24,39,0.97); backdrop-filter: blur(20px); border-top: 1px solid var(--border); }
+        .nav-item { transition: all 0.2s; }
+        .nav-item.active .nav-icon { background: rgba(0,229,160,0.15); color: var(--accent); }
+        .nav-item.active .nav-label { color: var(--accent); }
+        .nav-icon { border-radius: 12px; transition: all 0.2s; }
+
+        /* Cards */
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; }
+        .card-elevated { background: var(--bg-elevated); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; }
+
+        /* Buttons */
+        .btn-primary { background: var(--accent); color: #0A0E1A; font-family: 'Syne', sans-serif; font-weight: 700; border-radius: 14px; transition: all 0.2s; letter-spacing: 0.02em; }
+        .btn-primary:active { transform: scale(0.97); background: var(--accent-dark); }
+        .btn-danger { background: var(--danger); color: white; font-family: 'Syne', sans-serif; font-weight: 700; border-radius: 14px; transition: all 0.2s; }
+        .btn-danger:active { transform: scale(0.97); opacity: 0.9; }
+        .btn-ghost { border: 1px solid var(--border); color: var(--text-primary); background: transparent; border-radius: 14px; transition: all 0.2s; }
+        .btn-ghost:active { background: var(--bg-elevated); }
+
+        /* Inputs */
+        .input-field { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-primary); border-radius: 12px; transition: border-color 0.2s; font-family: 'DM Sans', sans-serif; }
+        .input-field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,160,0.1); }
+        .input-field::placeholder { color: var(--text-muted); }
+
+        /* Toast */
+        #toast-container { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; width: calc(100% - 32px); max-width: 400px; }
+        .toast { padding: 12px 16px; border-radius: 12px; font-weight: 600; font-size: 14px; font-family: 'Syne', sans-serif; animation: toastIn 0.3s ease; display: flex; align-items: center; gap: 10px; pointer-events: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+        .toast-success { background: rgba(0,229,160,0.95); color: #0A0E1A; }
+        .toast-error { background: rgba(255,77,106,0.95); color: white; }
+        .toast-info { background: rgba(99,130,255,0.95); color: white; }
+        @keyframes toastIn { from { opacity:0; transform: translateY(-10px) scale(0.95); } to { opacity:1; transform: translateY(0) scale(1); } }
+        @keyframes toastOut { to { opacity:0; transform: translateY(-10px) scale(0.95); } }
+        .toast.hiding { animation: toastOut 0.3s ease forwards; }
+
+        /* Scanner */
+        #qr-reader { border-radius: 16px; overflow: hidden; }
+        #qr-reader video { border-radius: 16px; }
+        #qr-reader__scan_region { border-radius: 16px; }
+        #qr-reader__dashboard_section_csr button { 
+            background: var(--accent) !important; 
+            color: #0A0E1A !important; 
+            border: none !important; 
+            border-radius: 10px !important;
+            font-family: 'Syne', sans-serif !important;
+            font-weight: 700 !important;
+            padding: 10px 20px !important;
+            cursor: pointer !important;
+        }
+        #qr-reader__dashboard_section_csr span { color: var(--text-muted) !important; }
+        #qr-reader__status_span { color: var(--text-muted) !important; font-size: 12px !important; }
+        #qr-reader__header_message { display: none !important; }
+
+        /* Stat cards */
+        .stat-card { position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: -30%; right: -10%; width: 100px; height: 100px; border-radius: 50%; opacity: 0.06; }
+        .stat-accent::before { background: var(--accent); }
+        .stat-warning::before { background: var(--warning); }
+        .stat-danger::before { background: var(--danger); }
+
+        /* Badge */
+        .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; font-family: 'Syne', sans-serif; }
+        .badge-success { background: rgba(0,229,160,0.12); color: var(--accent); }
+        .badge-warning { background: rgba(255,179,71,0.12); color: var(--warning); }
+        .badge-danger { background: rgba(255,77,106,0.12); color: var(--danger); }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; }
+        .modal-sheet { background: var(--bg-card); border-radius: 24px 24px 0 0; border-top: 1px solid var(--border); width: 100%; max-width: 500px; padding: 8px 0 32px; animation: sheetUp 0.3s ease; max-height: 90vh; overflow-y: auto; }
+        @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+
+        /* Loading */
+        .spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.2); border-top-color: currentColor; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Page transitions */
+        .page-content { animation: fadeUp 0.25s ease; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Quantity badge colors */
+        .qty-high { color: var(--accent); }
+        .qty-low { color: var(--warning); }
+        .qty-zero { color: var(--danger); }
+
+        /* Scan indicator */
+        .scan-active { border: 2px solid var(--accent); box-shadow: 0 0 0 4px rgba(0,229,160,0.1); }
+        .scan-pulse { animation: scanPulse 1.5s ease-in-out infinite; }
+        @keyframes scanPulse { 0%,100% { box-shadow: 0 0 0 4px rgba(0,229,160,0.1); } 50% { box-shadow: 0 0 0 8px rgba(0,229,160,0.2); } }
+    </style>
+</head>
+<body class="h-full flex flex-col">
+
+<div id="toast-container"></div>
+
+<!-- Shop Header Bar -->
+<div style="background: var(--bg-card); border-bottom: 1px solid var(--border);" class="sticky top-0 z-40">
+    <div class="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+        <div>
+            <div class="text-xs font-semibold" style="color: var(--accent); font-family: 'Syne', sans-serif; letter-spacing: 0.08em;">STOCK PULSE</div>
+            <div class="text-sm font-bold" style="font-family: 'Syne', sans-serif;">{{ session.get('shop_name', '') }}</div>
+        </div>
+        <a href="/logout" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl" style="background: var(--bg-elevated); color: var(--text-muted); font-family: 'Syne', sans-serif; border: 1px solid var(--border);">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Logout
+        </a>
+    </div>
+</div>
+
+<!-- Main content -->
+<main class="flex-1 overflow-y-auto pb-24" style="background: var(--bg-primary);">
+    <div class="page-content">
+        {% block content %}{% endblock %}
+    </div>
+</main>
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav fixed bottom-0 left-0 right-0 z-50 px-2 py-2 safe-area-pb">
+    <div class="flex justify-around max-w-lg mx-auto">
+        <a href="/" class="nav-item flex flex-col items-center gap-1 py-1 px-4 {% if request.path == '/' %}active{% endif %}">
+            <div class="nav-icon w-10 h-10 flex items-center justify-center">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            </div>
+            <span class="nav-label text-xs font-semibold" style="color: var(--text-muted); font-family: 'Syne', sans-serif;">Dashboard</span>
+        </a>
+        <a href="/add" class="nav-item flex flex-col items-center gap-1 py-1 px-4 {% if request.path == '/add' %}active{% endif %}">
+            <div class="nav-icon w-10 h-10 flex items-center justify-center">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </div>
+            <span class="nav-label text-xs font-semibold" style="color: var(--text-muted); font-family: 'Syne', sans-serif;">Add Stock</span>
+        </a>
+        <a href="/inventory" class="nav-item flex flex-col items-center gap-1 py-1 px-4 {% if request.path == '/inventory' %}active{% endif %}">
+            <div class="nav-icon w-10 h-10 flex items-center justify-center">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <span class="nav-label text-xs font-semibold" style="color: var(--text-muted); font-family: 'Syne', sans-serif;">Inventory</span>
+        </a>
+        <a href="/stock-out" class="nav-item flex flex-col items-center gap-1 py-1 px-4 {% if request.path == '/stock-out' %}active{% endif %}">
+            <div class="nav-icon w-10 h-10 flex items-center justify-center">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <span class="nav-label text-xs font-semibold" style="color: var(--text-muted); font-family: 'Syne', sans-serif;">Stock Out</span>
+        </a>
+    </div>
+</nav>
+
+<script>
+    // Toast system
+    function showToast(msg, type='success', duration=3000) {
+        const icons = { success: '✓', error: '✕', info: 'ℹ' };
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = `toast toast-${type}`;
+        t.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+        c.appendChild(t);
+        setTimeout(() => {
+            t.classList.add('hiding');
+            setTimeout(() => t.remove(), 300);
+        }, duration);
+    }
+    window.showToast = showToast;
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>
